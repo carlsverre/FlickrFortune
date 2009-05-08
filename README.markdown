@@ -25,8 +25,7 @@ Requirements
 - [PIL] [3]
 
 
-******************************************
-Copyright 2009 Carl Sverre
+**Copyright 2009 Carl Sverre**
 
 
 [1]: http://thelab.carlsverre.com/2009/03/31/flickrfortune	"FlickrFortune's Homepage"
