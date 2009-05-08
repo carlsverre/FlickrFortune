@@ -2,11 +2,12 @@ FlickrFortune
 =============
 FlickrFortune combines the wonderfully insightful (sometimes) power of
 the standard "fortune" program on most *nix systems with the Flickr
-API to create wallpapers!  To see some examples visit its [homepage] [1]
+API to create wallpapers!  To see some examples visit its [homepage] [1].
 
 
 Usage
 -----
+    flickrfortune [-s] [-c] [-n #] [-h]
     -n (--number) => number of wallpapers to generate
     -s => update the background with the last generated wallpaper
         (Note -s requires XFCE4 for now)
@@ -22,6 +23,7 @@ Requirements
 - python 2.5 (version 1 requires 2.5, development and above works on 2.6)
 - [flickrapi] [2]
 - [PIL] [3]
+
 
 ******************************************
 Copyright 2009 Carl Sverre
