@@ -42,23 +42,27 @@ defaultBackgroundText = "# xfce backdrop list\n"
 flickrUnavailableImage = "unavailable.gif"
 
 errorRetrievingPhoto = "ERROR: Cannot retrieve photo"
-errorNoPhotosForTag = "ERROR: Cannot find photo for tag, trying again"
-imageUnavailableError = "ERROR: Image Unavailable, trying again"
+errorNoPhotosForTag = "ERROR: Cannot find photo for tag '%s', trying again"
+imageUnavailableError = "ERROR: Image for tag '%s' unavailable, trying again"
 errorTooManyErrors = "ERROR: Too many errors occured, quitting"
 
 errorRetrievingPhoto_c = c_bred+"ERROR:"+c_bold+" Cannot retrieve photo"+c_norm
-errorNoPhotosForTag_c = c_bred+"ERROR:"+c_bold+" Cannot find photo for tag, trying again"+c_norm
-imageUnavailableError_c = c_bred+"ERROR:"+c_bold+" Image Unavailable, trying again"+c_norm
+errorNoPhotosForTag_c = c_bred+"ERROR:"+c_bold+" Cannot find photo for tag '%s', trying again"+c_norm
+imageUnavailableError_c = c_bred+"ERROR:"+c_bold+" Image for tag '%s' unavailable, trying again"+c_norm
 errorTooManyErrors_c = c_bred+"ERROR:"+c_bold+"Too many errors occured, quitting"+c_norm
 
-optsString = "hn:sc"
+optsString = "hn:slc"
 optsList = ["help", "number="]
 
 usageString = """Usage:
     -n (--number) => number of wallpapers to generate
     -s => update the background with the last generated wallpaper
-    -c => use colors
+    -l => logging on
+    -c => use colors (will turn logging on eg. you don't need -l)
     -h => this message"""
+
+currentFortuneString = "\nCURRENT FORTUNE:\n%s\n"
+currentFortuneString_c = c_bold+"\nCURRENT FORTUNE:"+c_norm+"\n%s\n"
 
 finishedWallpaperString = "FINISHED: %s"
 finishedWallpaperString_c = c_bgreen+"FINISHED: "+c_bold+"%s"+c_norm
@@ -68,11 +72,12 @@ photoUrlFormat = "http://farm%s.static.flickr.com/%s/%s_%s_b.jpg"
 timeStampFormat = "%d%m%y%H%M%S"
 timeStamp = datetime.datetime.now().strftime(timeStampFormat)
 
-tagRegexPattern = re.compile("[^A-Za-z ]")
+tagRegexPattern = re.compile("[^A-Za-z- ]")
 
 flickrPrefix = "flickr"
 
 colors = False
+logging = False
 
 # Functions
 def cleanUp():
@@ -82,14 +87,18 @@ def getFortune():
     f = os.popen("fortune -s");
     fortune = f.read()
     f.close()
+    fortune = fortune.strip("\n")
+    if colors: print currentFortuneString_c % fortune
+    elif logging: print currentFortuneString % fortune
     return fortune
 
-def getTag(fortune):
-    fortune = tagRegexPattern.sub("", fortune)
+def getTag(fortune, brokentags):
+    fortune = tagRegexPattern.sub(" ", fortune)
+    fortune = re.sub("-", " ", fortune)
     fortune = fortune.split(" ")
     word = fortune[0]
     for w in fortune:
-        if (len(w) >= len(word)) and (not w.lower() in noiseWords):
+        if (len(w) >= len(word)) and (not w.lower() in noiseWords) and (not w.lower() in brokentags):
             word = w
 
     return word
@@ -107,8 +116,8 @@ def loadPhotoURL(tag):
 
     photos = photos.find('photos').findall('photo')
     if not photos:
-        if colors: print errorNoPhotosForTag_c
-        else: print errorNoPhotosForTag
+        if colors: print errorNoPhotosForTag_c % tag
+        elif logging: print errorNoPhotosForTag % tag
         return 0
 
     photo = photos[0]
@@ -124,7 +133,7 @@ def getImageData(url):
     try:
         return urllib2.urlopen(url).read()
     except urllib2.URLError:
-        print urlib2_URLError
+        if logging or colors: print urlib2_URLError
         exit(1)
 
 def createWallpaper(flickrImage, fortune, prefix):
@@ -167,7 +176,7 @@ def saveFlickrImage(imageData, prefix):
     try:
         f = open(localDir + fileName, 'w')
     except IOError:
-        print IOError
+        if logging or colors: print IOError
         exit(1)
 
     f.write(imageData)
@@ -180,17 +189,17 @@ def setWallpaper(fileName):
         backgroundList = open(xfce4BackgroundList, "w")
         backgroundList.write(defaultBackgroundText)
     except IOError:
-        print IOError
+        if logging or colors: print IOError
         exit(1)
 
     backgroundList.write(fileName + "\n")
     backgroundList.close()
-    os.system("xfdesktop -reload")
+    os.system("xfdesktop --reload")
 
-def checkUnavailable(flickrImage):
+def checkUnavailable(flickrImage, tag):
     if os.path.getsize(localDir + flickrImage) == os.path.getsize(localDir + flickrUnavailableImage):
-        if colors: print imageUnavailableError_c
-        else: print imageUnavailableError
+        if colors: print imageUnavailableError_c % tag
+        elif logging: print imageUnavailableError % tag
         return True
     return False
 
@@ -199,8 +208,7 @@ def usage():
     sys.exit(2)
 
 def main(argv):
-    global colors
-    print
+    global colors, logging
 
     numWallpapers = 1
     updateBackground = False
@@ -217,6 +225,8 @@ def main(argv):
             numWallpapers = int(arg)
         elif opt == '-s':
             updateBackground = True
+        elif opt == '-l':
+            logging = True
         elif opt == '-c':
             colors = True
 
@@ -225,25 +235,36 @@ def main(argv):
     while True:
         if numErrors >= maxErrors:
             if colors: print errorTooManyErrors_c
-            else: print errorTooManyErrors
+            elif logging: print errorTooManyErrors
             break
 
         fortune = getFortune()
-        tag = getTag(fortune)
-        photoUrl = loadPhotoURL(tag)
-        if photoUrl == 0:
-            numErrors += 1
-            continue
+        badTags = []
+        badTagCount = 0
+        while True:
+            if badTagCount == 3:
+                break
+            tag = getTag(fortune, badTags)
+            photoUrl = loadPhotoURL(tag)
+            if photoUrl == 0:
+                badTags.append(tag.lower())
+                badTagCount += 1
+                continue
 
-        flickrImage = saveFlickrImage(getImageData(photoUrl), tag)
+            flickrImage = saveFlickrImage(getImageData(photoUrl), tag)
 
-        if checkUnavailable(flickrImage):
-            numErrors += 1
+            if checkUnavailable(flickrImage, tag):
+                badTags.append(tag.lower())
+                badTagCount += 1
+                continue
+            break
+
+        if badTagCount == 3:
             continue
         
         wallpaperFile = createWallpaper(flickrImage, fortune, tag)
         if colors: print finishedWallpaperString_c % wallpaperFile
-        else: print finishedWallpaperString % wallpaperFile
+        elif logging: print finishedWallpaperString % wallpaperFile
 
         counter += 1
         if counter == numWallpapers:
@@ -253,8 +274,8 @@ def main(argv):
 
         numErrors = 0
 
+    if logging or colors: print
     cleanUp()
-    print
 
 if __name__ == "__main__":
     main(sys.argv[1:])
