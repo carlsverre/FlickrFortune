@@ -185,16 +185,7 @@ def saveFlickrImage(imageData, prefix):
     return fileName
 
 def setWallpaper(fileName):
-    try:
-        backgroundList = open(xfce4BackgroundList, "w")
-        backgroundList.write(defaultBackgroundText)
-    except IOError:
-        if logging or colors: print IOError
-        exit(1)
-
-    backgroundList.write(fileName + "\n")
-    backgroundList.close()
-    os.system("xfdesktop --reload")
+    os.system(setWallpaperCommand % fileName)
 
 def checkUnavailable(flickrImage, tag):
     if os.path.getsize(localDir + flickrImage) == os.path.getsize(localDir + flickrUnavailableImage):

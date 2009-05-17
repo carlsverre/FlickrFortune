@@ -20,8 +20,8 @@
 # Your flickr api key
 apiKey = "YOUR FLICKR API KEY HERE"
 
-# The xfce backdrop list
-xfce4BackgroundList = "FULL PATH TO YOUR DESKTOP BACKDROP LIST (XFCE ONLY)"
+# Change wallpaper command with %s for filename
+setWallpaperCommand = 'xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s "%s"'
 
 # Where to store the wallpapers
 wallpaperDir = "FULL PATH"
