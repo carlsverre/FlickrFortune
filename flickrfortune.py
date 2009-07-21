@@ -132,9 +132,9 @@ def loadPhotoURL(tag):
 def getImageData(url):
     try:
         return urllib2.urlopen(url).read()
-    except urllib2.URLError:
-        if logging or colors: print urlib2_URLError
-        exit(1)
+    except urllib2.URLError as e:
+        if logging or colors: print e
+        return 0
 
 def createWallpaper(flickrImage, fortune, prefix):
     wallpaper = Image.new("RGB", wallpaperSize, "black")
@@ -241,8 +241,16 @@ def main(argv):
                 badTags.append(tag.lower())
                 badTagCount += 1
                 continue
+            
+            imageData = getImageData(photoUrl)
+            if imageData == 0:
+                if colors: print imageUnavailableError_c % tag
+                elif logging: print imageUnavailableError % tag
+                badTags.append(tag.lower())
+                badTagCount += 1
+                continue
 
-            flickrImage = saveFlickrImage(getImageData(photoUrl), tag)
+            flickrImage = saveFlickrImage(imageData, tag)
 
             if checkUnavailable(flickrImage, tag):
                 badTags.append(tag.lower())
