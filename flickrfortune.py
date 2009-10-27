@@ -39,7 +39,7 @@ c_bred = "\033[1;31m"
 c_bgreen = "\033[1;32m"
 
 defaultBackgroundText = "# xfce backdrop list\n"
-flickrUnavailableImage = "unavailable.gif"
+flickrUnavailableImage = "unavailable"
 
 errorRetrievingPhoto = "ERROR: Cannot retrieve photo"
 errorNoPhotosForTag = "ERROR: Cannot find photo for tag '%s', trying again"
